@@ -113,6 +113,40 @@ app.post('/submit', async (req, res) => {
 app.get('/checkin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'checkin.html')));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 
+const API_KEY = process.env.ATTENDANCE_API_KEY;
+
+app.get('/api/attendance', async (req, res) => {
+  if (!API_KEY || req.headers['x-api-key'] !== API_KEY) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  try {
+    if (!fs.existsSync(EXCEL_FILE)) return res.json({ rows: [], columns: [] });
+    const wb = new exceljs.Workbook();
+    await wb.xlsx.readFile(EXCEL_FILE);
+    const rows = [];
+    wb.eachSheet((ws) => {
+      ws.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+        if (rowNumber === 1) return; // skip header
+        const [name, session, date, time] = row.values.slice(1);
+        if (!name) return;
+        rows.push({
+          Name: String(name ?? ''),
+          Session: String(session ?? ''),
+          Date: String(date ?? ''),
+          Time: String(time ?? ''),
+          Sheet: ws.name,
+        });
+      });
+    });
+    res.json({ rows, columns: ['Name', 'Session', 'Date', 'Time', 'Sheet'] });
+  } catch (err) {
+    console.error('>>> /api/attendance error:', err.message);
+    res.status(500).json({ error: 'Failed to read attendance' });
+  }
+});
+
+
+
 ensureExcelFile().then(() => {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`\n✅ Attendance app running on port ${PORT}`);
