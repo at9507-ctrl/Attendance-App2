@@ -95,8 +95,9 @@ app.post('/submit', async (req, res) => {
 
   try {
     const now = new Date();
-    const date = now.toLocaleDateString('en-GB');
-    const time = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const uaeTime = new Date(now.getTime() + (4 * 60 * 60 * 1000));
+    const date = uaeTime.toLocaleDateString('en-GB');
+    const time = uaeTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const wb = new exceljs.Workbook();
     await wb.xlsx.readFile(EXCEL_FILE);
     const ws = wb.getWorksheet(currentSession.sheetName);
